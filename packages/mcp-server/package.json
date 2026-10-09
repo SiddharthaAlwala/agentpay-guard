@@ -1,0 +1,19 @@
+{
+  "name": "@agentpay/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server that gives any AI agent guarded payment tools via AgentPay Guard",
+  "type": "module",
+  "bin": {
+    "agentpay-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
+}
