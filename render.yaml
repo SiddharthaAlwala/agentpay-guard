@@ -1,0 +1,40 @@
+# One-click deploy on Render: Dashboard → New → Blueprint → pick this repo.
+# Creates the guard (Docker), a Postgres database and a Redis-compatible Key Value instance.
+services:
+  - type: web
+    name: agentpay-guard
+    runtime: docker
+    plan: free
+    healthCheckPath: /readyz
+    envVars:
+      - key: DEMO_MODE
+        value: 'true'
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: DATABASE_SSL
+        value: 'false'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agentpay-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: agentpay-redis
+          property: connectionString
+      - key: REPO_URL
+        sync: false
+      - key: LLM_CLASSIFIER
+        value: 'false'
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+  - type: keyvalue
+    name: agentpay-redis
+    plan: free
+    ipAllowList: []
+
+databases:
+  - name: agentpay-db
+    plan: free
+    databaseName: agentpay
