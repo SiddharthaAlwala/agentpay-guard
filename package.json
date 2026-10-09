@@ -1,0 +1,38 @@
+{
+  "name": "agentpay-guard",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A spending firewall for AI agents: policy engine, prompt-injection defense, human approvals and a double-entry ledger.",
+  "workspaces": [
+    "apps/guard",
+    "apps/dashboard",
+    "apps/demo-agent",
+    "packages/mcp-server"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/guard",
+    "dev:dashboard": "npm run dev -w apps/dashboard",
+    "build": "npm run build -w apps/dashboard && npm run build -w apps/guard && npm run build -w packages/mcp-server && npm run build -w apps/demo-agent",
+    "test": "npm test -w apps/guard",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "migrate": "npm run migrate -w apps/guard",
+    "seed": "npm run seed -w apps/guard",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "typescript-eslint": "^8.71.1"
+  }
+}
