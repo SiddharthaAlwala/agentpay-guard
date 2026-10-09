@@ -8,7 +8,7 @@ services:
     build: .
     ports: ['8080:8080']
     environment:
-      DATABASE_URL: postgres://agentpay:agentpay@postgres:5432/agentpay
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/agentpay
       REDIS_URL: redis://redis:6379
       DEMO_MODE: '${DEMO_MODE:-true}'
       ADMIN_TOKEN: '${ADMIN_TOKEN:-local-dev-admin-token}'
@@ -22,13 +22,17 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: agentpay
-      POSTGRES_PASSWORD: agentpay
+      # Same credentials as .env.example and the test defaults, so `npm run dev` and `npm test`
+      # work against this container with no extra configuration. Local development only.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: agentpay
     ports: ['5432:5432']
-    volumes: [pgdata:/var/lib/postgresql/data]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U agentpay']
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
       retries: 10
 
