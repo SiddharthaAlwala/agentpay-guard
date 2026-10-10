@@ -158,13 +158,14 @@ npm test         # needs Postgres + Redis; see TEST_DATABASE_URL / TEST_REDIS_UR
 npm run check    # lint + format check + typecheck + tests, the same gate CI runs
 ```
 
-46 tests across unit and integration (real Postgres and Redis, no mocks), including:
+47 tests across unit and integration (real Postgres and Redis, no mocks), including:
 
 - 50 identical requests at the same instant → exactly one payment, one debit, one credit
 - 40 concurrent requests against a budget → exactly `floor(budget / amount)` approved, ledger reconciled
 - pending approvals count against the budget; rejection releases it; double-approve is refused
 - the ledger rejects `UPDATE` and `DELETE` at the database level
 - with Redis unreachable, velocity limits still hold via Postgres
+- Postgres dropping every connection (a restart or failover) doesn't crash the process; the next request succeeds
 
 CI (GitHub Actions) runs lint, formatting and typecheck, the full suite against service containers, builds the Docker image and smoke-tests it.
 

@@ -12,7 +12,7 @@ Open http://localhost:8080 and click every scenario in **Try to break it**. Appr
 
 Without Docker: install Postgres 16 and Redis 7, then `npm install && npm run dev` (see the README).
 
-Run the full check once so you can talk about it: `npm run check` (lint, formatting, types and all 46 tests).
+Run the full check once so you can talk about it: `npm run check` (lint, formatting, types and all 47 tests).
 
 ## 2. Put it on GitHub (20 min)
 
@@ -122,7 +122,7 @@ Post the video natively (not a YouTube link). Put the GitHub and live links in t
 >
 > The part I found most interesting: model-level safety is probabilistic, but money needs a deterministic control outside the model. And the tool's response matters: when a payment is blocked, the guard tells the agent "don't work around this, explain it to the user," because agents follow tool output.
 >
-> Stack: TypeScript, Fastify, PostgreSQL, Redis, React, MCP, Docker, GitHub Actions, Prometheus/Grafana. 46 tests against real Postgres and Redis.
+> Stack: TypeScript, Fastify, PostgreSQL, Redis, React, MCP, Docker, GitHub Actions, Prometheus/Grafana. 47 tests against real Postgres and Redis.
 >
 > Code and live demo in the comments. I'd love feedback from anyone building agents that touch money.
 >
@@ -137,6 +137,6 @@ Under **Projects**:
 - Built a policy engine that approves, blocks or escalates AI-agent payments in real time using 12 rules (budgets, velocity, category scope, intent drift, prompt-injection detection), exposed to agents through an MCP server and a REST API.
 - Guaranteed exactly-once charging and no budget overspend under concurrency with idempotency keys, per-agent row locks and database constraints; verified by tests firing 50 duplicate and 40 concurrent requests.
 - Designed an append-only double-entry ledger with continuous reconciliation; ~400 decisions/s on 2 vCPUs with 16K+ journals balanced and zero double posts under load.
-- Shipped a human-in-the-loop approval queue, kill switch and live React dashboard (SSE over Redis pub/sub), with OpenAPI docs, Prometheus/Grafana metrics, 46 integration tests and CI/CD to a containerized deployment.
+- Shipped a human-in-the-loop approval queue, kill switch and live React dashboard (SSE over Redis pub/sub), with OpenAPI docs, Prometheus/Grafana metrics, 47 integration tests and CI/CD to a containerized deployment.
 
 Pick two or three bullets depending on space. In interviews, be ready to explain: why pessimistic locking here, why pending approvals reserve budget, what happens when Redis goes down, and why the heuristics run before the LLM.
