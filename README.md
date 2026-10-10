@@ -103,6 +103,8 @@ npm run dev                     # guard on :8080 (runs migrations, seeds demo ag
 npm run dev:dashboard           # dashboard with hot reload on :5173
 ```
 
+With `LOG_LEVEL=debug` (the default in `.env.example`) the guard's terminal prints every step of each payment decision, `1/7 payment request received` through `7/7 payment APPROVED`. Open `api.http` in VS Code with the REST Client extension for 30+ ready-made test cases, and use the **Debug guard API** launch configuration to step through a decision with breakpoints.
+
 ### Call it like an agent
 
 ```bash

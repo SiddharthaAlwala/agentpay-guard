@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Step-by-step decision tracing at `LOG_LEVEL=debug` (`1/7` … `7/7`), with readable colored logs in local development.
+- `api.http` with 30+ manual test cases for the VS Code REST Client extension.
+- Shared VS Code setup: debug configurations for the API, tests and MCP server; recommended extensions; format on save.
+
+### Changed
+
+- Demo shopping agent's velocity limit raised from 5 to 10 per minute so manual test runs don't trip it.
+
 ## [1.0.0] - 2026-10-09
 
 ### Added
