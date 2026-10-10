@@ -37,9 +37,10 @@ export const requestHash = (input: PaymentRequestInput) => createHash('sha256').
 export interface FlowLogger {
   debug(obj: object, msg: string): void;
   info(obj: object, msg: string): void;
+  warn(obj: object, msg: string): void;
 }
 
-const silent: FlowLogger = { debug: () => undefined, info: () => undefined };
+const silent: FlowLogger = { debug: () => undefined, info: () => undefined, warn: () => undefined };
 
 export class PaymentService {
   /** Set by the app to its request-independent logger. Silent by default (tests, scripts). */
@@ -74,10 +75,18 @@ export class PaymentService {
 
     const existing = await this.findByKey(this.db, agent.id, idempotencyKey);
     if (existing) {
-      this.log.debug(
-        { ...flow, paymentId: existing.id },
-        '2/7 idempotency key seen before: replaying original decision',
-      );
+      if (existing.request_hash === hash) {
+        this.log.debug(
+          { ...flow, paymentId: existing.id },
+          '2/7 idempotency key seen before: replaying original decision',
+        );
+      } else {
+        this.log.warn(
+          { ...flow, paymentId: existing.id },
+          '2/7 idempotency key reused for a different request: rejecting with 409',
+        );
+      }
+
       return this.replay(existing, hash);
     }
     this.log.debug(flow, '2/7 new idempotency key');
