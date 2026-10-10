@@ -11,6 +11,11 @@ All notable changes to this project are documented here. The format follows
 - `api.http` with 30+ manual test cases for the VS Code REST Client extension.
 - Shared VS Code setup: debug configurations for the API, tests and MCP server; recommended extensions; format on save.
 
+### Fixed
+
+- The guard no longer exits when Postgres restarts or drops pooled connections; it logs a warning and
+  reconnects on the next query. Requests fail after 5 s instead of hanging when the database is unreachable.
+
 ### Changed
 
 - Demo shopping agent's velocity limit raised from 5 to 10 per minute so manual test runs don't trip it.

@@ -9,11 +9,18 @@ export type Db = pg.Pool;
 export type Tx = pg.PoolClient;
 
 export function createPool(cfg: Config): Db {
-  return new pg.Pool({
+  const pool = new pg.Pool({
     connectionString: cfg.DATABASE_URL,
     max: cfg.DATABASE_POOL_MAX,
     ssl: cfg.DATABASE_SSL ? { rejectUnauthorized: false } : undefined,
+    // Fail a request after 5 s instead of hanging forever when the database is unreachable.
+    connectionTimeoutMillis: 5_000,
   });
+  // When Postgres restarts or drops connections, idle pooled clients emit 'error'. Without a
+  // listener Node treats that as an unhandled error and the whole process exits. The pool has
+  // already discarded the broken client and will open a new one on the next query.
+  pool.on('error', (err) => console.error(`[db] idle connection lost: ${err.message}`));
+  return pool;
 }
 
 /** Runs fn inside a transaction, committing on success and rolling back on any error. */

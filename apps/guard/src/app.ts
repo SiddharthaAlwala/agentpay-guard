@@ -105,6 +105,8 @@ export async function buildApp(opts: BuildOptions): Promise<{ app: FastifyInstan
   });
 
   payments.log = app.log.child({ component: 'payments' });
+  db.removeAllListeners('error');
+  db.on('error', (err) => app.log.warn({ err: err.message }, 'postgres connection lost; the pool will reconnect'));
 
   // Zod is the validator; JSON schemas on routes are for OpenAPI docs only.
   app.setValidatorCompiler(() => () => true);
