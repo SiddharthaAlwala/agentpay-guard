@@ -22,7 +22,7 @@ export const DEMO_AGENTS: DemoAgentSpec[] = [
       monthlyLimitCents: 400_000,
       approvalThresholdCents: 15_000,
       allowedCategories: ['electronics', 'office_supplies', 'books', 'household'],
-      velocityMax: 5,
+      velocityMax: 10,
       velocityWindowSec: 60,
     },
   },

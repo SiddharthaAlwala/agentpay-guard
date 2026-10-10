@@ -33,7 +33,18 @@ function canonical(value: unknown): string {
 
 export const requestHash = (input: PaymentRequestInput) => createHash('sha256').update(canonical(input)).digest('hex');
 
+/** Minimal logger shape (pino-compatible). Debug lines trace each step of a decision. */
+export interface FlowLogger {
+  debug(obj: object, msg: string): void;
+  info(obj: object, msg: string): void;
+}
+
+const silent: FlowLogger = { debug: () => undefined, info: () => undefined };
+
 export class PaymentService {
+  /** Set by the app to its request-independent logger. Silent by default (tests, scripts). */
+  log: FlowLogger = silent;
+
   constructor(
     private db: Db,
     private agents: AgentService,
@@ -55,10 +66,27 @@ export class PaymentService {
     const started = performance.now();
     const hash = requestHash(input);
 
+    const flow = { agent: agent.name, idempotencyKey };
+    this.log.debug(
+      { ...flow, merchant: input.merchant, amountCents: input.amountCents },
+      '1/7 payment request received',
+    );
+
     const existing = await this.findByKey(this.db, agent.id, idempotencyKey);
-    if (existing) return this.replay(existing, hash);
+    if (existing) {
+      this.log.debug(
+        { ...flow, paymentId: existing.id },
+        '2/7 idempotency key seen before: replaying original decision',
+      );
+      return this.replay(existing, hash);
+    }
+    this.log.debug(flow, '2/7 new idempotency key');
 
     const injection = await this.scan(input);
+    this.log.debug(
+      { ...flow, score: injection.score, signals: injection.signals.map((x) => x.id), source: injection.source },
+      '3/7 prompt-injection scan done',
+    );
 
     try {
       const payment = await withTx(this.db, async (tx) => {
@@ -69,13 +97,31 @@ export class PaymentService {
         const current = locked.rows[0];
         if (!current) throw new HttpError(404, 'agent_not_found', 'Agent not found');
 
+        this.log.debug(
+          flow,
+          "4/7 agent row locked (SELECT ... FOR UPDATE): this agent's payments now run one at a time",
+        );
+
         const again = await this.findByKey(tx, agent.id, idempotencyKey);
-        if (again) return { kind: 'replay' as const, row: again };
+        if (again) {
+          this.log.debug(flow, 'a concurrent duplicate won the race: replaying its decision');
+          return { kind: 'replay' as const, row: again };
+        }
 
         const policy = await this.agents.policy(tx, agent.id);
         const spend = await this.committedSpend(tx, agent.id);
         const id = randomUUID();
         const velocity = await this.velocity.hit(tx, agent.id, policy.velocity_window_sec, id);
+        this.log.debug(
+          {
+            ...flow,
+            policyVersion: policy.version,
+            spentTodayCents: spend.today,
+            dailyLimitCents: policy.daily_limit_cents,
+            velocity: `${velocity.count}/${policy.velocity_max} in ${policy.velocity_window_sec}s (${velocity.source})`,
+          },
+          '5/7 policy, committed spend and velocity loaded',
+        );
 
         const decision = evaluate({
           agent: current,
@@ -86,6 +132,15 @@ export class PaymentService {
           velocityCount: velocity.count,
           injection,
         });
+        this.log.debug(
+          {
+            ...flow,
+            outcome: decision.outcome,
+            riskScore: decision.riskScore,
+            rulesFired: decision.reasons.filter((r) => r.outcome !== 'pass').map((r) => `${r.rule}:${r.outcome}`),
+          },
+          '6/7 all rules evaluated',
+        );
         const latencyMs = Number((performance.now() - started).toFixed(2));
 
         const { rows } = await tx.query<PaymentRow>(
@@ -135,6 +190,20 @@ export class PaymentService {
         if (r.outcome !== 'pass') metrics.ruleHits.inc({ rule: r.rule, outcome: r.outcome });
       if (row.status === 'blocked') metrics.blockedCents.inc(row.amount_cents);
       this.events.publish({ type: 'payment.decided', payment: { ...toApi(row), agentName: agent.name } });
+      this.log.info(
+        {
+          paymentId: row.id,
+          agent: agent.name,
+          merchant: row.merchant,
+          amountCents: row.amount_cents,
+          status: row.status,
+          riskScore: row.risk_score,
+          rulesFired: row.decision_reasons.filter((r) => r.outcome !== 'pass').map((r) => r.rule),
+          ledger: row.status === 'approved' ? 'journal posted (1 debit, 1 credit)' : 'nothing posted',
+          latencyMs: row.latency_ms,
+        },
+        `7/7 payment ${row.status.toUpperCase()}`,
+      );
       return { payment: row, replay: false };
     } catch (err) {
       // The agent row lock makes this unreachable in practice; the unique constraint is the
@@ -234,6 +303,15 @@ export class PaymentService {
       return u;
     });
     metrics.humanReviews.inc({ decision });
+    this.log.info(
+      {
+        paymentId: row.id,
+        reviewer,
+        status: row.status,
+        ledger: row.status === 'approved' ? 'journal posted' : 'nothing posted',
+      },
+      `human ${decision === 'approve' ? 'approved' : 'rejected'} a held payment`,
+    );
     this.events.publish({ type: 'payment.reviewed', payment: toApi(row) });
     return row;
   }

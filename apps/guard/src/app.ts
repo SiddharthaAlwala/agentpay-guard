@@ -94,10 +94,17 @@ export async function buildApp(opts: BuildOptions): Promise<{ app: FastifyInstan
         : {
             level: cfg.LOG_LEVEL,
             redact: ['req.headers.authorization', 'req.headers["x-admin-token"]'],
+            // Human-readable, colored logs in local development; JSON everywhere else (for log tooling).
+            transport:
+              cfg.NODE_ENV === 'development' && process.stdout.isTTY
+                ? { target: 'pino-pretty', options: { translateTime: 'HH:MM:ss', ignore: 'pid,hostname' } }
+                : undefined,
           },
     trustProxy: true,
     genReqId: (req) => (req.headers['x-request-id'] as string) || crypto.randomUUID(),
   });
+
+  payments.log = app.log.child({ component: 'payments' });
 
   // Zod is the validator; JSON schemas on routes are for OpenAPI docs only.
   app.setValidatorCompiler(() => () => true);
