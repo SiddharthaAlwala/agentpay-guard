@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
 - The guard no longer exits when Postgres restarts or drops pooled connections; it logs a warning and
   reconnects on the next query. Requests fail after 5 s instead of hanging when the database is unreachable.
 
+- The payment log no longer says "replaying original decision" when an idempotency key is reused for a different request; it now logs a warning matching the 409 response.
+
 ### Changed
 
 - Demo shopping agent's velocity limit raised from 5 to 10 per minute so manual test runs don't trip it.
