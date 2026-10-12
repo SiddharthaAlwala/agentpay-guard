@@ -8,6 +8,11 @@
 
 ![Dashboard](docs/dashboard.png)
 
+> **New: Spend Guard proxy** ([`apps/proxy`](apps/proxy/README.md)). Per-agent budgets for OpenAI and
+> Anthropic API usage, enforced before the money is spent: change the SDK's base URL, use an
+> `apg_live_` key, and each agent gets daily/monthly budgets, per-request cost caps, model allow-lists,
+> runaway-loop detection and a kill switch. Streaming supported; exact cost from provider usage.
+
 ## The problem
 
 Giving an AI agent a card is giving it a blank check. Four things go wrong in practice:
@@ -188,6 +193,7 @@ Throughput is CPU-bound on the shared box; at concurrency 50 latency is mostly q
 
 ```
 apps/guard           Fastify API: policy engine, ledger, approvals, SSE, metrics, OpenAPI
+apps/proxy           Spend Guard: budget-enforcing proxy for the OpenAI and Anthropic APIs
 apps/dashboard       React + Vite dashboard (served by the guard in production)
 apps/demo-agent      Claude agent that pays only through the MCP server
 packages/mcp-server  MCP server exposing guarded payment tools to any agent
