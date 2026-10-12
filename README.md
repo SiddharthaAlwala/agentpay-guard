@@ -4,8 +4,7 @@
 
 ![CI](https://github.com/SiddharthaAlwala/agentpay-guard/actions/workflows/ci.yml/badge.svg)
 
-**Live demo:** [agentpay-guard-9bhb.onrender.com](https://agentpay-guard-9bhb.onrender.com) (free tier: the first visit can take about a minute to wake up)
-
+  **Live demo:** [agentpay-guard-9bhb.onrender.com](https://agentpay-guard-9bhb.onrender.com) (free tier: the first visit can take about a minute to wake up) &nbsp;|&nbsp; **API docs:** [OpenAPI](https://agentpay-guard-9bhb.onrender.com/docs)
 ![Dashboard](docs/dashboard.png)
 
 ## The problem
