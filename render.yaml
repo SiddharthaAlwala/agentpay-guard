@@ -6,6 +6,7 @@ services:
     runtime: docker
     plan: free
     healthCheckPath: /readyz
+    autoDeployTrigger: checksPass
     envVars:
       - key: DEMO_MODE
         value: 'true'
