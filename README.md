@@ -2,9 +2,9 @@
 
 **A spending firewall for AI agents.** Agents are starting to buy things for people. AgentPay Guard sits between any agent and the money and decides, in milliseconds, whether each payment is approved, blocked, or held for a human. Every decision says why.
 
-![CI](https://github.com/YOUR_GITHUB_USERNAME/agentpay-guard/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/SiddharthaAlwala/agentpay-guard/actions/workflows/ci.yml/badge.svg)
 
-**Live demo:** `https://YOUR-APP.onrender.com` &nbsp;|&nbsp; **API docs:** `/docs` &nbsp;|&nbsp; **Demo video:** _link_
+**Live demo:** [agentpay-guard-9bhb.onrender.com](https://agentpay-guard-9bhb.onrender.com) (free tier: the first visit can take about a minute to wake up)
 
 ![Dashboard](docs/dashboard.png)
 
