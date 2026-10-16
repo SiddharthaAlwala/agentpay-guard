@@ -18,6 +18,16 @@ All notable changes to this project are documented here. The format follows
     issued keys stored as SHA-256 hashes; prompts never stored.
   - Client disconnects cancel the provider call; orphaned reservations are swept at their worst case.
   - Operator CLI, `proxy.http` manual tests, overhead benchmark, Docker target `proxy`, CI job.
+  - Price catalog verified against the official pages (2026-10-16): 16 Anthropic and 17 OpenAI models,
+    including Claude 5.5 and OpenAI gpt-6; retired models removed.
+
+### Fixed
+
+- **Spend Guard proxy:** OpenAI cache writes (GPT-5.6 and later) are billed at 1.25× the input rate
+  instead of the plain input rate, and every OpenAI request reserves for a possible cache write.
+- **Spend Guard proxy:** Claude Sonnet 4.5 no longer carries a long-prompt surcharge that Anthropic
+  removed; Claude Haiku 5.5's surcharge above 100K prompt tokens is applied.
+- **Spend Guard proxy:** `cli prices` no longer needs a database.
 
 - Step-by-step decision tracing at `LOG_LEVEL=debug` (`1/7` … `7/7`), with readable colored logs in local development.
 - `api.http` with 30+ manual test cases for the VS Code REST Client extension.

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { generateApiKey, hashApiKey, looksLikeOurKey, Vault } from '../src/crypto.js';
 import { estimatePromptTokens } from '../src/estimate.js';
-import { findPrice, maxPrice } from '../src/pricing/catalog.js';
+import { CATALOG, CATALOG_META, findPrice, maxPrice } from '../src/pricing/catalog.js';
 import { costMicros, emptyUsage, worstCaseMicros } from '../src/pricing/cost.js';
 import { anthropic } from '../src/providers/anthropic.js';
-import { openai } from '../src/providers/openai.js';
+import { openai, openaiUsage } from '../src/providers/openai.js';
 import { SseParser } from '../src/sse.js';
 
 const enc = new TextEncoder();
@@ -24,7 +24,41 @@ describe('price catalog', () => {
   });
 
   it('prices unknown models at the most expensive known model when allowed', () => {
-    expect(maxPrice('anthropic', 'x').output).toBe(75);
+    expect(maxPrice('anthropic', 'x').output).toBe(50);
+    expect(maxPrice('openai', 'x').output).toBe(50);
+  });
+
+  it('has been checked against the official pages, with sane numbers on every row', () => {
+    for (const meta of Object.values(CATALOG_META)) expect(meta.verifiedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const ids = new Set<string>();
+    for (const p of CATALOG) {
+      for (const id of [p.model, ...(p.aliases ?? [])]) {
+        expect(ids.has(`${p.provider}:${id}`), `duplicate id ${id}`).toBe(false);
+        ids.add(`${p.provider}:${id}`);
+      }
+      // A zero or missing price would let a model run for free against the budget.
+      expect(p.input, p.model).toBeGreaterThan(0);
+      expect(p.output, p.model).toBeGreaterThan(p.input);
+      expect(p.cacheRead, p.model).toBeGreaterThan(0);
+      expect(p.cacheRead, p.model).toBeLessThan(p.input);
+      if (p.cacheWrite5m !== undefined) expect(p.cacheWrite5m, p.model).toBeGreaterThan(p.input);
+      expect(p.maxOutputTokens, p.model).toBeGreaterThanOrEqual(16_384);
+    }
+  });
+
+  it('knows the current flagship models of both providers', () => {
+    for (const m of ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5', 'claude-fable-5-1']) {
+      expect(findPrice('anthropic', m), m).toBeDefined();
+    }
+    for (const m of ['gpt-6-astra', 'gpt-6.1-sol', 'gpt-6-luna', 'gpt-5.5-2026-04-23']) {
+      expect(findPrice('openai', m), m).toBeDefined();
+    }
+  });
+
+  it('no longer lists retired models', () => {
+    expect(findPrice('anthropic', 'claude-opus-4-1')).toBeUndefined();
+    expect(findPrice('anthropic', 'claude-3-5-haiku-20241022')).toBeUndefined();
+    expect(findPrice('openai', 'o4-mini')).toBeUndefined();
   });
 });
 
@@ -47,18 +81,59 @@ describe('cost', () => {
     expect(costMicros(sonnet, u)).toBe(3750 + 6000 + 300);
   });
 
-  it('switches to long-context rates above 200K prompt tokens', () => {
-    expect(costMicros(sonnet, { ...emptyUsage(), inputTokens: 200_000 })).toBe(600_000);
-    expect(costMicros(sonnet, { ...emptyUsage(), inputTokens: 200_001 })).toBe(1_200_006);
+  it('has no long-prompt surcharge on Sonnet 4.5 any more', () => {
+    expect(costMicros(sonnet, { ...emptyUsage(), inputTokens: 300_000 })).toBe(900_000);
+  });
+
+  it('Haiku 5.5: higher rates for the whole request above 100K prompt tokens, cache reads included', () => {
+    const haiku = findPrice('anthropic', 'claude-haiku-5-5')!;
+    expect(costMicros(haiku, { ...emptyUsage(), inputTokens: 100_000 })).toBe(10_000); // $0.10/M
+    expect(costMicros(haiku, { ...emptyUsage(), inputTokens: 100_001 })).toBe(50_001); // $0.50/M, rounded up
+    // 60K new + 50K read from cache = 110K prompt: over the threshold, so the reads pay $0.05/M.
+    expect(costMicros(haiku, { ...emptyUsage(), inputTokens: 60_000, cacheReadTokens: 50_000 })).toBe(30_000 + 2_500);
+  });
+
+  it('OpenAI: 2x input and 1.5x output above 272K prompt tokens', () => {
+    const sol = findPrice('openai', 'gpt-6.1-sol')!;
+    expect(costMicros(sol, { ...emptyUsage(), inputTokens: 272_000, outputTokens: 1000 })).toBe(544_000 + 10_000);
+    expect(costMicros(sol, { ...emptyUsage(), inputTokens: 272_001, outputTokens: 1000 })).toBe(1_088_004 + 15_000);
+  });
+
+  it('OpenAI GPT-5.6+: cache writes cost 1.25x input; older models write for free', () => {
+    const sol = findPrice('openai', 'gpt-6.1-sol')!;
+    expect(costMicros(sol, { ...emptyUsage(), cacheWrite5mTokens: 1000 })).toBe(2500);
+    expect(costMicros(mini, { ...emptyUsage(), cacheWrite5mTokens: 1000 })).toBe(150);
   });
 
   it('adds server-side web searches', () => {
     expect(costMicros(sonnet, { ...emptyUsage(), webSearches: 3 })).toBe(30_000);
   });
 
-  it('worst case assumes the full output allowance and the cache-write rate when caching is requested', () => {
+  it('worst case assumes the full output allowance and the cache-write rate when caching is possible', () => {
     expect(worstCaseMicros(sonnet, 1000, 1000, false)).toBe(3000 + 15_000);
     expect(worstCaseMicros(sonnet, 1000, 1000, true)).toBe(6000 + 15_000);
+    const sol = findPrice('openai', 'gpt-6.1-sol')!;
+    expect(worstCaseMicros(sol, 1000, 1000, true)).toBe(2500 + 10_000);
+  });
+});
+
+describe('OpenAI usage', () => {
+  it('splits the prompt into plain input, cache reads and cache writes (Responses example from the docs)', () => {
+    const u = openaiUsage('/v1/responses', {
+      input_tokens: 15_000,
+      input_tokens_details: { cached_tokens: 12_000, cache_write_tokens: 3_000 },
+      output_tokens: 10,
+    })!;
+    expect(u).toMatchObject({ inputTokens: 0, cacheReadTokens: 12_000, cacheWrite5mTokens: 3_000, outputTokens: 10 });
+  });
+
+  it('never counts more cached tokens than the prompt had', () => {
+    const u = openaiUsage('/v1/chat/completions', {
+      prompt_tokens: 100,
+      prompt_tokens_details: { cached_tokens: 80, cache_write_tokens: 80 },
+      completion_tokens: 5,
+    })!;
+    expect(u.inputTokens + u.cacheReadTokens + u.cacheWrite5mTokens).toBe(100);
   });
 });
 

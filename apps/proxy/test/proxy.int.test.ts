@@ -372,8 +372,8 @@ describe('controls', () => {
     await deps.admin.updateProject(c.projectId, { unknownModelPolicy: 'max_price' });
     await expect(c.claude.messages.create({ ...hi(), model: 'claude-future-9' })).resolves.toBeTruthy();
     const settled = (await settledEvents(c.keyId, 2)).find((e) => e.status === 'settled')!;
-    // Priced as the most expensive Anthropic model in the catalog (Opus 4.1: $15/$75).
-    expect(settled.cost_micros).toBe(100 * 15 + 50 * 75);
+    // Priced as the most expensive Anthropic model in the catalog (Fable 5.1: $10/$50).
+    expect(settled.cost_micros).toBe(100 * 10 + 50 * 50);
   });
 
   it('detects a runaway loop: the same request over and over', async () => {

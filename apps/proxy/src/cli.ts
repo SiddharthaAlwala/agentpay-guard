@@ -40,6 +40,28 @@ const { positionals, values } = parseArgs({
   },
 });
 
+/** Prints the price table. Needs no database, so it works anywhere the code is checked out. */
+function printPrices() {
+  for (const [provider, meta] of Object.entries(CATALOG_META)) {
+    console.log(`${provider}: ${meta.source} (verified: ${meta.verifiedAt ?? 'NOT YET'})`);
+  }
+  console.table(
+    CATALOG.map((p) => ({
+      model: `${p.provider}/${p.model}`,
+      input: p.input,
+      output: p.output,
+      'cache read': p.cacheRead,
+      'cache write': p.cacheWrite5m ?? '-',
+      'long prompt above': p.longContext?.aboveInputTokens ?? '-',
+    })),
+  );
+}
+
+if (positionals[0] === 'prices') {
+  printPrices();
+  process.exit(0);
+}
+
 const cfg = loadConfig();
 const db = createPool(cfg);
 await migrate(db, () => undefined);
@@ -157,19 +179,6 @@ try {
       );
       break;
     }
-    case 'prices':
-      for (const [provider, meta] of Object.entries(CATALOG_META)) {
-        console.log(`${provider}: ${meta.source} (verified: ${meta.verifiedAt ?? 'NOT YET'})`);
-      }
-      console.table(
-        CATALOG.map((p) => ({
-          model: `${p.provider}/${p.model}`,
-          input: p.input,
-          output: p.output,
-          'cache read': p.cacheRead,
-        })),
-      );
-      break;
     default:
       console.log(
         'Commands: setup, provider-key, create-key, limits, project, freeze, unfreeze, revoke, usage, prices',

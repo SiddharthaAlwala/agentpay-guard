@@ -25,7 +25,10 @@ const ERROR_TYPES: Record<ErrorKind, string> = {
   upstream: 'server_error',
 };
 
-/** Chat Completions and Responses name the same numbers differently. Cached tokens are a subset of the prompt. */
+/**
+ * Chat Completions and Responses name the same numbers differently. Tokens read from and written to
+ * the cache are both subsets of the prompt total; writes cost extra on GPT-5.6 and later.
+ */
 export function openaiUsage(path: string, u: Record<string, unknown> | undefined | null): Usage | null {
   if (!u) return null;
   const usage = emptyUsage();
@@ -33,8 +36,10 @@ export function openaiUsage(path: string, u: Record<string, unknown> | undefined
   const prompt = num(chat ? u.prompt_tokens : u.input_tokens);
   const details = (chat ? u.prompt_tokens_details : u.input_tokens_details) as Record<string, unknown> | undefined;
   const cached = Math.min(num(details?.cached_tokens), prompt);
-  usage.inputTokens = prompt - cached;
+  const written = Math.min(num(details?.cache_write_tokens), prompt - cached);
+  usage.inputTokens = prompt - cached - written;
   usage.cacheReadTokens = cached;
+  usage.cacheWrite5mTokens = written;
   // Reasoning tokens are already included in the output count.
   usage.outputTokens = num(chat ? u.completion_tokens : u.output_tokens);
   return usage;
@@ -130,7 +135,8 @@ export const openai: ProviderAdapter = {
       stream: body.stream === true,
       maxOutputTokens: null,
       outputMultiplier: 1,
-      mayWriteCache: false,
+      // OpenAI caches prompts automatically, so any request may write to the cache.
+      mayWriteCache: true,
     };
     if (path === CHAT) {
       const max = body.max_completion_tokens ?? body.max_tokens;

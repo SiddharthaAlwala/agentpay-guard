@@ -138,8 +138,10 @@ adds well under 1% to a typical request.
 
 ## Known limits (v1)
 
-- **Prices must be verified before launch.** `src/pricing/catalog.ts` was written from memory and
-  marked unverified; newer models must be added. Unknown models are blocked by default.
+- **Prices are checked by hand.** `src/pricing/catalog.ts` was last verified against the official
+  pages on 2026-10-16 (`npm run cli -w apps/proxy -- prices` shows the date). Re-check monthly and on
+  every model launch or retirement; `gpt-5.6-sol` is on a promotional price until at least 2026-11-21.
+  Unknown models are blocked by default.
 - The prompt-size estimate (used only for the reservation) is conservative but not a tokenizer. A
   request whose real prompt exceeds the estimate can overshoot a budget by that difference, once.
 - For OpenAI streams cut off before the end, hidden reasoning tokens can't be seen, so the estimate

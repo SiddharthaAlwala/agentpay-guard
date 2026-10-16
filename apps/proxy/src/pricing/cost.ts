@@ -55,7 +55,7 @@ export function worstCaseMicros(
   mayWriteCache: boolean,
 ): number {
   const r = ratesFor(price, estimatedPromptTokens);
-  const inputRate = mayWriteCache ? Math.max(r.input, r.cacheWrite1h ?? r.input) : r.input;
+  const inputRate = mayWriteCache ? Math.max(r.input, r.cacheWrite5m ?? 0, r.cacheWrite1h ?? 0) : r.input;
   return Math.ceil((estimatedPromptTokens * milli(inputRate) + maxOutputTokens * milli(r.output)) / 1000);
 }
 
