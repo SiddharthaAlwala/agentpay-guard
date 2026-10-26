@@ -10,7 +10,14 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['apps/guard/**/*.ts', 'packages/**/*.ts', 'apps/demo-agent/**/*.ts', 'scripts/**/*.mjs', '*.mjs'],
+    files: [
+      'apps/guard/**/*.ts',
+      'apps/proxy/**/*.ts',
+      'packages/**/*.ts',
+      'apps/demo-agent/**/*.ts',
+      'scripts/**/*.mjs',
+      '*.mjs',
+    ],
     languageOptions: { globals: globals.node },
   },
   {
@@ -30,7 +37,15 @@ export default tseslint.config(
   },
   {
     // CLIs and demo scripts print to stdout on purpose.
-    files: ['scripts/**', 'apps/demo-agent/**', 'apps/guard/src/migrate.ts', 'apps/guard/src/demo/seed.ts'],
+    files: [
+      'scripts/**',
+      'apps/demo-agent/**',
+      'apps/guard/src/migrate.ts',
+      'apps/guard/src/demo/seed.ts',
+      'apps/proxy/src/cli.ts',
+      'apps/proxy/src/migrate.ts',
+      'apps/proxy/bench/**',
+    ],
     rules: { 'no-console': 'off' },
   },
   prettier,

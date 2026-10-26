@@ -7,6 +7,28 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **Spend Guard proxy** (`apps/proxy`): per-agent budgets for OpenAI and Anthropic API usage.
+  - Drop-in: point the official SDK at the proxy and use an `apg_live_` key; streaming supported for
+    Anthropic Messages, OpenAI Chat Completions and Responses.
+  - Reserve-then-settle accounting in integer micro-dollars: worst-case cost reserved under a row lock,
+    exact cost settled from provider usage (cache reads/writes, long context, web search priced separately).
+  - Daily, monthly, project-wide and per-request budgets; requests-per-minute; allowed models; runaway-loop
+    detection; kill switch. Errors in each provider's own format, with `x-should-retry: false` on budget blocks.
+  - Customers' provider keys encrypted with AES-256-GCM (bound to project and provider, rotatable master keys);
+    issued keys stored as SHA-256 hashes; prompts never stored.
+  - Client disconnects cancel the provider call; orphaned reservations are swept at their worst case.
+  - Operator CLI, `proxy.http` manual tests, overhead benchmark, Docker target `proxy`, CI job.
+  - Price catalog verified against the official pages (2026-10-16): 16 Anthropic and 17 OpenAI models,
+    including Claude 5.5 and OpenAI gpt-6; retired models removed.
+
+### Fixed
+
+- **Spend Guard proxy:** OpenAI cache writes (GPT-5.6 and later) are billed at 1.25× the input rate
+  instead of the plain input rate, and every OpenAI request reserves for a possible cache write.
+- **Spend Guard proxy:** Claude Sonnet 4.5 no longer carries a long-prompt surcharge that Anthropic
+  removed; Claude Haiku 5.5's surcharge above 100K prompt tokens is applied.
+- **Spend Guard proxy:** `cli prices` no longer needs a database.
+
 - Step-by-step decision tracing at `LOG_LEVEL=debug` (`1/7` … `7/7`), with readable colored logs in local development.
 - `api.http` with 30+ manual test cases for the VS Code REST Client extension.
 - Shared VS Code setup: debug configurations for the API, tests and MCP server; recommended extensions; format on save.
