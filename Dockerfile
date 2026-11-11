@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # One image: the guard API plus the built dashboard, served from the same origin.
 
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY apps/guard/package.json apps/guard/
@@ -13,7 +13,7 @@ COPY apps/guard apps/guard
 COPY apps/dashboard apps/dashboard
 RUN npm run build -w apps/dashboard && npm run build -w apps/guard
 
-FROM node:22-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/guard/package.json apps/guard/
@@ -22,7 +22,7 @@ COPY apps/demo-agent/package.json apps/demo-agent/
 COPY packages/mcp-server/package.json packages/mcp-server/
 RUN npm ci --omit=dev --no-audit --no-fund
 
-FROM node:22-alpine
+FROM node:26-alpine
 ENV NODE_ENV=production \
     PORT=8080 \
     STATIC_DIR=/app/public
